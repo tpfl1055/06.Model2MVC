@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper
+		PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- ProductMapper.xml :: SQL 를 갖는 MetaData - MyBatis Framework 은 XML MetaData 
+	를 사용 SQL구문을 관리 (SQL은 xml 을 통해 적절히 캡슐화 되어 애플리케이선 외부로 분리함) - SQL문의 입력(?) / 
+	출력(?)을 매핑한다. <== 아래의 select element 참조 -->
+
+<mapper namespace="ProductMapper">
+
+	<!-- 위의 namespace 이용 Application 에서 ProductMapper.~~ 로 아래의 SQL 을 참조 :: 아래의 
+		query 수행 후 결과 resultType 에 선언된 User Domain Object Field ( property )에 자동연결(?,바인딩) 
+		:: SQL / Query 의 Alias 와 User Domain Object 의 Field 이름 동일한 것 확인. -->
+
+	<resultMap id="productSelectMap" type="com.model2.mvc.service.domain.Product">
+		<result property="fileName" column="image_file" jdbcType="VARCHAR" />
+		<result property="manuDate" column="manufacture_day" jdbcType="VARCHAR" />
+		<result property="price" column="price" jdbcType="NUMERIC" />
+		<result property="prodDetail" column="prod_detail" jdbcType="VARCHAR" />
+		<result property="prodName" column="prod_name" jdbcType="VARCHAR" />
+		<result property="prodNo" column="prod_no" jdbcType="NUMERIC" />
+		<result property="regDate" column="reg_date" jdbcType="DATE" />
+		<!-- <result property="proTranCode" column="reg_date" jdbcType="VARCHAR"/> -->
+	</resultMap>
+
+
+
+	<sql id="orderby-reg_date">
+		ORDER BY reg_date
+	</sql>
+
+
+	<insert id="insertProduct" parameterType="com.model2.mvc.service.domain.Product">
+		<!-- <insert id="insertProduct" parameterType="mybatis.service.domain.Product"> -->
+		INSERT
+		INTO product(prod_no, prod_name, prod_detail, manufacture_day,
+		price,image_file, reg_date)
+		VALUES( seq_product_prod_no.nextval,
+		#{prodName:VARCHAR},
+		#{prodDetail:VARCHAR},
+		#{manuDate:VARCHAR},
+		#{price:NUMERIC},
+		#{fileName:VARCHAR},
+		SYSDATE)
+
+	</insert>
+
+
+	<select id="findProduct" parameterType="int" resultMap="productSelectMap">
+
+		SELECT
+		prod_no, prod_name, prod_detail, manufacture_day, price, image_file, reg_date
+		FROM product
+		WHERE prod_no = #{value}
+
+	</select>
+
+
+	<select  id="getProductList"  parameterType="com.model2.mvc.common.Search"	resultMap="productSelectMap">
+	  	SELECT prod_no, prod_name, price, reg_date
+	  	FROM (	SELECT inner_table.* , ROWNUM AS row_seq
+	  					FROM		(	SELECT prod_no, prod_name, price, reg_date
+											FROM product
+											<if test="searchCondition != null">
+												<where>
+													<if test="searchCondition == 0 and searchKeyword !='' ">
+										 				prod_no IN #{searchKeyword}
+													</if>
+													<if test="searchCondition == 1 and searchKeyword !='' ">
+										 				prod_name IN #{searchKeyword}
+													</if>
+													<if test="searchCondition == 2 and searchKeyword !='' ">
+										 				price IN #{searchKeyword}
+													</if>
+												</where>
+											</if>
+											ORDER BY reg_date ) inner_table
+						WHERE ROWNUM &lt;= #{endRowNum} )
+		WHERE row_seq BETWEEN #{startRowNum} AND #{endRowNum} 
+	 </select>
+
+
+
+ 	<select  id="getTotalCount"  parameterType="com.model2.mvc.common.Search"	 resultType="int">
+	  	SELECT COUNT(*)
+	  	FROM(	SELECT 	prod_no, prod_name, price, reg_date
+						FROM product
+						<if test="searchCondition != null">
+							<where>
+								<if test="searchCondition == 0 and searchKeyword !='' ">
+						 			prod_no = #{searchKeyword}
+								</if>
+								<if test="searchCondition == 1 and searchKeyword !='' ">
+						 			prod_name = #{searchKeyword}
+								</if>
+								<if test="searchCondition == 2 and searchKeyword !='' ">
+						 			price = #{searchKeyword}
+								</if>
+							</where>
+						</if> ) countTable						
+	 </select>
+
+
+
+	<update id="updateProduct"	parameterType="com.model2.mvc.service.domain.Product">
+		UPDATE product
+		<set>
+			<if test="prodName != null">prod_name = #{prodName}, </if>
+			<if test="prodDetail != null">prod_detail = #{prodDetail}, </if>
+			<if test="manuDate != null">manufacture_day = #{manuDate}, </if>
+			<if test="price != null">price = #{price}, </if>
+			<if test="fileName != null">image_file = #{fileName}, </if>
+			<if test="regDate != null">reg_date = #{regDate} </if>
+		</set>
+		WHERE prod_no = #{prodNo}
+	</update>
+	
+	
+
+
+
+
+
+</mapper>
